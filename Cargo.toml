@@ -1,0 +1,20 @@
+[package]
+name = "nekosearch"
+version = "0.0.1"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/pas2rust/nekosearch"
+readme = "README.md"
+description = "A Rust toolkit for text search, fuzzy matching and intent detection: tokenization, normalization, TF-IDF, Jaccard, Levenshtein, and ranking pipelines."
+keywords = ["search"]
+authors = ["pas2rust <pas2000@proton.me>"]
+homepage = "https://github.com/pas2rust/"
+documentation = "https://docs.rs/nekosearch"
+include = [
+    "src/**",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE*"
+]
+
+categories = ["development-tools", "algorithms"]
