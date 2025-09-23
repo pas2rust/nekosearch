@@ -31,7 +31,7 @@ const EPSILON: f64 = 0.00001;
 
 #[test]
 fn test_find_perfect_match() {
-    let neko = NekoSearch::new().target("Rust".to_string());
+    let neko = NekoSearch::new().target("Rust");
 
     let result = neko.find("Rust");
     assert!((result.score - 1.0).abs() < EPSILON);
@@ -40,7 +40,7 @@ fn test_find_perfect_match() {
 #[test]
 fn test_custom_weights() {
     let neko = NekoSearch::new()
-        .target("martha".to_string())
+        .target("martha")
         .lev_weight(0.1)
         .jaro_winkler_weight(0.8)
         .n_gram_weight(0.1);
@@ -48,7 +48,7 @@ fn test_custom_weights() {
     let result_low_lev = neko.find("marhta");
 
     let neko_high_lev = NekoSearch::new()
-        .target("martha".to_string())
+        .target("martha")
         .lev_weight(0.8)
         .jaro_winkler_weight(0.1)
         .n_gram_weight(0.1);
@@ -60,7 +60,7 @@ fn test_custom_weights() {
 
 #[test]
 fn test_filter_method() {
-    let neko = NekoSearch::new().target("Rust".to_string());
+    let neko = NekoSearch::new().target("Rust");
     let terms = vec!["Rost", "Java", "Python", "Rust"];
     let results = neko.filter(terms);
     assert_eq!(results.len(), 4);
