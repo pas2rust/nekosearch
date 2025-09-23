@@ -17,7 +17,7 @@ include = [
     "LICENSE*"
 ]
 
-categories = ["development-tools", "algorithms", "fuzzy"]
+categories = ["development-tools", "algorithms"]
 
 [dependencies]
 kenzu = "0.0"
