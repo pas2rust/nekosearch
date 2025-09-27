@@ -10,20 +10,11 @@ use kenzu::Builder;
 /// a `NekoSearch` instance.
 #[derive(Builder, Debug, Clone)]
 pub struct NekoSearch {
-    /// Target string that all queries will be compared against.
-    pub target: String,
-
-    /// Weight for the Levenshtein similarity score.
-    #[set(value = 0.2)]
-    pub lev_weight: f64,
-
-    /// Weight for the Jaro-Winkler similarity score.
-    #[set(value = 0.6)]
-    pub jaro_winkler_weight: f64,
-
-    /// Weight for the N-gram Jaccard similarity score.
-    #[set(value = 0.2)]
-    pub n_gram_weight: f64,
+    pub txt: String,
+    pub term: String,
+    pub jaro: Jaro,
+    pub jaccard: Jaccard,
+    pub levenshtein: Levenshtein,
 }
 
 /// Result of a fuzzy search comparison.
@@ -48,79 +39,51 @@ pub struct Find {
 }
 
 impl NekoSearch {
-    /// Calculate all score components (Levenshtein, Jaro-Winkler, Jaccard)
-    /// and return them along with the final weighted score.
-    ///
-    /// The input string is normalized (trimmed and lowercased) before comparison.
-    fn calc_score_components(&self, txt: &str) -> (f64, f64, f64, f64) {
-        let target_norm = self.target.trim().to_lowercase();
-        let text_norm = txt.trim().to_lowercase();
-
-        let lev_dist = levenshtein_distance(&target_norm, &text_norm);
-        let max_len = target_norm.len().max(text_norm.len()) as f64;
-        let lev_score = if max_len == 0.0 {
-            1.0 
-        } else {
-            1.0 - (lev_dist as f64 / max_len)
-        };
-
-        let jaro_score = jaro_winkler_similarity(&target_norm, &text_norm);
-
-        let n_gram_size = 2;
-        let target_ngrams = get_ngrams(&target_norm, n_gram_size);
-        let text_ngrams = get_ngrams(&text_norm, n_gram_size);
-        let jaccard_score = jaccard_similarity(&target_ngrams, &text_ngrams);
-
-        let combined_score = lev_score * self.lev_weight
-            + jaro_score * self.jaro_winkler_weight
-            + jaccard_score * self.n_gram_weight;
-
-        let total_weight = self.lev_weight + self.jaro_winkler_weight + self.n_gram_weight;
+    pub fn calc(&self, ngram_size: usize) -> f64 {
+        let txt = &self.txt;
+        let term = &self.term;
+        let lev_score = self.levenshtein.calc(txt, term);
+        let jaro_score = self.jaro.calc(txt, term);
+        let jaccard_score = self.jaccard.calc(
+            JaccardValue::new().ngram_size(ngram_size).target(txt),
+            JaccardValue::new().ngram_size(ngram_size).target(term),
+        );
+        let combined_score = lev_score + jaro_score + jaccard_score;
+        let total_weight = 3.0;
         let normalized_score = if total_weight == 0.0 {
             0.0
         } else {
             combined_score / total_weight
         };
 
-        (normalized_score, lev_score, jaro_score, jaccard_score)
+        normalized_score
     }
+    pub fn find(&self, ngram_size: usize) -> Find {
+        let txt = &self.txt;
+        let term = &self.term;
+        let lev_score_raw = self.levenshtein.calc(txt, term);
+        let jaro_score_raw = self.jaro.calc(txt, term);
+        let jaccard_score_raw = self.jaccard.calc(
+            JaccardValue::new().target(txt).ngram_size(ngram_size),
+            JaccardValue::new().target(term).ngram_size(ngram_size),
+        );
 
-    /// Compare a single string against the target and return a [`Find`] result
-    /// with the aggregated and raw similarity scores.
-    pub fn find<T: Into<String>>(&self, text: T) -> Find {
-        let txt = text.into();
-        let (score, lev_score, jaro_score, jaccard_score) = self.calc_score_components(&txt);
+        let lev_score = lev_score_raw * self.levenshtein.weight;
+        let jaro_score = jaro_score_raw * self.jaro.weight;
+        let jaccard_score = jaccard_score_raw * self.jaccard.weight;
+
+        let total_weight = self.levenshtein.weight + self.jaro.weight + self.jaccard.weight;
+        let normalized_score = if total_weight == 0.0 {
+            0.0
+        } else {
+            (lev_score + jaro_score + jaccard_score) / total_weight
+        };
 
         Find::new()
-            .term(txt)
-            .score(score)
-            .lev_score(lev_score)
-            .jaro_score(jaro_score)
-            .jaccard_score(jaccard_score)
-    }
-
-    /// Compare multiple strings against the target.
-    ///
-    /// Returns a vector of [`Find`] results, one for each input string.
-    pub fn filter<'a, T: Into<Vec<&'a str>>>(&self, text: T) -> Vec<Find> {
-        let texts = text.into();
-        let mut results = Vec::with_capacity(texts.len());
-
-        for &term in &texts {
-            let term_string = term.to_string();
-            let (score, lev_score, jaro_score, jaccard_score) =
-                self.calc_score_components(&term_string);
-
-            let find_result = Find::new()
-                .term(term_string)
-                .score(score)
-                .lev_score(lev_score)
-                .jaro_score(jaro_score)
-                .jaccard_score(jaccard_score);
-
-            results.push(find_result);
-        }
-
-        results
+            .term(term)
+            .score(normalized_score)
+            .lev_score(lev_score_raw)
+            .jaro_score(jaro_score_raw)
+            .jaccard_score(jaccard_score_raw)
     }
 }
