@@ -52,15 +52,15 @@ fn test_find_different_lengths() {
 #[test]
 fn test_custom_weights() {
     let neko_low_lev = NekoSearch::new().txt("martha").term("marhta").flow(vec![
-        Box::new(Jaro::new().weight(0.9)) as Box<dyn Calc>,
-        Box::new(Levenshtein::new().weight(0.1)) as Box<dyn Calc>,
+        Jaro::new().weight(0.9).to_box(),
+        Levenshtein::new().weight(0.1).to_box(),
     ]);
 
     let result_low_lev = neko_low_lev.find();
 
     let neko_high_lev = NekoSearch::new().txt("martha").term("marhta").flow(vec![
-        Box::new(Jaro::new().weight(0.1)) as Box<dyn Calc>,
-        Box::new(Levenshtein::new().weight(0.9)) as Box<dyn Calc>,
+        Jaro::new().weight(0.1).to_box(),
+        Levenshtein::new().weight(0.9).to_box(),
     ]);
 
     let result_high_lev = neko_high_lev.find();
@@ -92,14 +92,14 @@ fn test_filter_method() {
 }
 
 #[test]
-fn test_find_perfect_match_sentence_en() {
+fn test_find_perfect_match_sentence() {
     let neko = build_neko("The quick brown fox", "The quick brown fox");
     let result = neko.find();
     assert!((result.score - 1.0).abs() < EPSILON);
 }
 
 #[test]
-fn test_find_typo_in_sentence_en() {
+fn test_find_typo_in_sentence() {
     let neko = build_neko("The quick brown fox", "The quikc brown fx");
     let result = neko.find();
     println!("{result:#?}");
@@ -107,21 +107,21 @@ fn test_find_typo_in_sentence_en() {
 }
 
 #[test]
-fn test_find_added_word_en() {
+fn test_find_added_word() {
     let neko = build_neko("The quick brown fox", "The quick brown fox jumps");
     let result = neko.find();
     assert!(result.score > 0.5 && result.score < 1.0);
 }
 
 #[test]
-fn test_find_removed_word_en() {
+fn test_find_removed_word() {
     let neko = build_neko("The quick brown fox jumps", "The quick brown fox");
     let result = neko.find();
     assert!(result.score > 0.5 && result.score < 1.0);
 }
 
 #[test]
-fn test_find_transposed_words_en() {
+fn test_find_transposed_words() {
     let neko = build_neko("The brown quick fox", "The quick brown fox");
     let result = neko.find();
     assert!(result.score > 0.5);

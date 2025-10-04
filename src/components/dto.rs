@@ -3,4 +3,10 @@ pub trait Calc {
     fn get_weight(&self) -> f64 {
         1.0
     }
+    fn to_box(self) -> Box<dyn Calc>
+    where
+        Self: Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
