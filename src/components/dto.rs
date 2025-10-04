@@ -1,3 +1,6 @@
-pub trait Calc<T1, T2> {
-    fn calc(&self, t1: T1, t2: T2) -> f64;
+pub trait Calc {
+    fn calc(&self, t1: String, t2: String) -> f64;
+    fn get_weight(&self) -> f64 {
+        1.0
+    }
 }

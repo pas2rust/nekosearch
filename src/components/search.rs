@@ -4,17 +4,51 @@ use kenzu::Builder;
 /// NekoSearch provides fuzzy text search based on a weighted combination of:
 /// - **Levenshtein distance** (edit distance normalized as similarity)
 /// - **Jaro-Winkler similarity** (good for typos and transpositions)
-/// - **N-gram Jaccard similarity** (good for capturing overlapping substrings)
 ///
 /// The weights for each similarity method can be adjusted when building
 /// a `NekoSearch` instance.
-#[derive(Builder, Debug, Clone)]
 pub struct NekoSearch {
     pub txt: String,
     pub term: String,
-    pub jaro: Jaro,
-    pub jaccard: Jaccard,
-    pub levenshtein: Levenshtein,
+    pub flow: Vec<Box<dyn Calc>>,
+}
+
+impl NekoSearch {
+    pub fn new() -> Self {
+        Self {
+            txt: String::default(),
+            term: String::default(),
+            flow: vec![
+                Box::new(Jaro::new()) as Box<dyn Calc>,
+                Box::new(Levenshtein::new()) as Box<dyn Calc>,
+            ],
+        }
+    }
+
+    pub fn txt(mut self, new: impl Into<String>) -> Self {
+        self.txt = new.into();
+        self
+    }
+
+    pub fn term(mut self, new: impl Into<String>) -> Self {
+        self.term = new.into();
+        self
+    }
+
+    pub fn flow(mut self, new: Vec<Box<dyn Calc>>) -> Self {
+        self.flow = new;
+        self
+    }
+}
+
+impl std::fmt::Debug for NekoSearch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NekoSearch")
+            .field("txt", &self.txt)
+            .field("term", &self.term)
+            .field("flow_len", &self.flow.len())
+            .finish()
+    }
 }
 
 /// Result of a fuzzy search comparison.
@@ -27,63 +61,31 @@ pub struct Find {
 
     /// Final normalized similarity score (weighted combination).
     pub score: f64,
-
-    /// Raw Levenshtein similarity score.
-    pub lev_score: f64,
-
-    /// Raw Jaro-Winkler similarity score.
-    pub jaro_score: f64,
-
-    /// Raw Jaccard similarity score using N-grams.
-    pub jaccard_score: f64,
 }
 
 impl NekoSearch {
-    pub fn calc(&self, ngram_size: usize) -> f64 {
+    pub fn calc(&self) -> f64 {
         let txt = &self.txt;
         let term = &self.term;
-        let lev_score = self.levenshtein.calc(txt, term);
-        let jaro_score = self.jaro.calc(txt, term);
-        let jaccard_score = self.jaccard.calc(
-            JaccardValue::new().ngram_size(ngram_size).target(txt),
-            JaccardValue::new().ngram_size(ngram_size).target(term),
-        );
-        let combined_score = lev_score + jaro_score + jaccard_score;
-        let total_weight = 3.0;
-        let normalized_score = if total_weight == 0.0 {
+
+        let mut total_score = 0.0;
+        let mut total_weight = 0.0;
+
+        for algo in &self.flow {
+            let score = algo.calc(txt.clone(), term.clone());
+            let weight = algo.get_weight();
+            total_score += score * weight;
+            total_weight += weight;
+        }
+
+        if total_weight == 0.0 {
             0.0
         } else {
-            combined_score / total_weight
-        };
-
-        normalized_score
+            total_score / total_weight
+        }
     }
-    pub fn find(&self, ngram_size: usize) -> Find {
-        let txt = &self.txt;
-        let term = &self.term;
-        let lev_score_raw = self.levenshtein.calc(txt, term);
-        let jaro_score_raw = self.jaro.calc(txt, term);
-        let jaccard_score_raw = self.jaccard.calc(
-            JaccardValue::new().target(txt).ngram_size(ngram_size),
-            JaccardValue::new().target(term).ngram_size(ngram_size),
-        );
-
-        let lev_score = lev_score_raw * self.levenshtein.weight;
-        let jaro_score = jaro_score_raw * self.jaro.weight;
-        let jaccard_score = jaccard_score_raw * self.jaccard.weight;
-
-        let total_weight = self.levenshtein.weight + self.jaro.weight + self.jaccard.weight;
-        let normalized_score = if total_weight == 0.0 {
-            0.0
-        } else {
-            (lev_score + jaro_score + jaccard_score) / total_weight
-        };
-
-        Find::new()
-            .term(term)
-            .score(normalized_score)
-            .lev_score(lev_score_raw)
-            .jaro_score(jaro_score_raw)
-            .jaccard_score(jaccard_score_raw)
+    pub fn find(&self) -> Find {
+        let normalized_score = self.calc();
+        Find::new().term(&self.term).score(normalized_score)
     }
 }

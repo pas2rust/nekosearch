@@ -4,12 +4,12 @@ use crate::Calc;
 
 #[derive(Debug, Builder, Default, Clone)]
 pub struct Jaro {
-    #[set(value = 0.6)]
+    #[set(value = 0.5)]
     pub weight: f64,
 }
 
-impl Calc<&str, &str> for Jaro {
-    fn calc(&self, s1: &str, s2: &str) -> f64 {
+impl Calc for Jaro {
+    fn calc(&self, s1: String, s2: String) -> f64 {
         let s1_chars: Vec<char> = s1.chars().collect();
         let s2_chars: Vec<char> = s2.chars().collect();
         let s1_len = s1_chars.len();
@@ -66,5 +66,8 @@ impl Calc<&str, &str> for Jaro {
             .count();
         let p = prefix_len as f64;
         jaro + p * 0.1 * (1.0 - jaro)
+    }
+    fn get_weight(&self) -> f64 {
+        self.weight
     }
 }
