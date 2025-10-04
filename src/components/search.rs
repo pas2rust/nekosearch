@@ -13,6 +13,12 @@ pub struct NekoSearch {
     pub flow: Vec<Box<dyn Calc>>,
 }
 
+impl Default for NekoSearch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NekoSearch {
     pub fn new() -> Self {
         Self {
