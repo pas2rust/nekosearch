@@ -20,4 +20,4 @@ include = [
 categories = ["development-tools", "algorithms"]
 
 [dependencies]
-kenzu = "0.0"
+kenzu = "0.0.9"

@@ -1,7 +1,9 @@
-pub trait Calc {
-    fn calc(&self, t1: String, t2: String) -> f64;
-    fn get_weight(&self) -> f64 {
-        1.0
+use std::fmt::Debug;
+
+pub trait Calc: Debug {
+    fn calc(&self, t1: String, t2: String) -> u8;
+    fn get_weight(&self) -> u8 {
+        100
     }
     fn to_box(self) -> Box<dyn Calc>
     where

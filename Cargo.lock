@@ -115,9 +115,9 @@ dependencies = [
 
 [[package]]
 name = "kenzu"
-version = "0.0.7"
+version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6f8f7769e688810af17d0a398cda84ba0c6dd3078953df5e8297628464876e"
+checksum = "021edc408844510472762d6dad43cbb70be687b6054150979bd663cdfbf7756b"
 dependencies = [
  "mokuya",
  "proc-macro2",

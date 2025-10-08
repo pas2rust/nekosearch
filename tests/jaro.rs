@@ -1,14 +1,12 @@
 use nekosearch::components::prelude::*;
 
-const EPSILON: f64 = 0.000001;
-
 #[test]
 fn test_identical_strings() {
     let s1 = "martha";
     let s2 = "martha";
     let jaro = Jaro::new();
     let similarity = jaro.calc(s1.into(), s2.into());
-    assert!((similarity - 1.0).abs() < EPSILON);
+    assert_eq!(similarity, 100);
 }
 
 #[test]
@@ -17,7 +15,13 @@ fn test_transposed_letters() {
     let s2 = "marhta";
     let jaro = Jaro::new();
     let similarity = jaro.calc(s1.into(), s2.into());
-    assert!((similarity - 0.961).abs() < 0.001);
+
+    let expected = (0.961_f64 * 100.0).round() as u8;
+    assert_eq!(
+        similarity, expected,
+        "similarity = {}, expected = {}",
+        similarity, expected
+    );
 }
 
 #[test]
@@ -26,7 +30,13 @@ fn test_different_lengths_with_prefix() {
     let s2 = "dicksonx";
     let jaro = Jaro::new();
     let similarity = jaro.calc(s1.into(), s2.into());
-    assert!((similarity - 0.767).abs() < 0.05);
+
+    let expected = (0.767_f64 * 100.0).round() as u8;
+    assert_eq!(
+        similarity, expected,
+        "similarity = {}, expected = {}",
+        similarity, expected
+    );
 }
 
 #[test]
@@ -35,5 +45,5 @@ fn test_no_match() {
     let s2 = "abc";
     let jaro = Jaro::new();
     let similarity = jaro.calc(s1.into(), s2.into());
-    assert!((similarity - 0.0).abs() < EPSILON);
+    assert_eq!(similarity, 0);
 }
