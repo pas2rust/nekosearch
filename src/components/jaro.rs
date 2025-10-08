@@ -25,7 +25,7 @@ impl Calc for Jaro {
         let mut s1_matches: Vec<char> = Vec::new();
 
         for (i, c1) in s1_chars.iter().enumerate() {
-            let start = if i > max_dist { i - max_dist } else { 0 };
+            let start = i.saturating_sub(max_dist);
             let end = (i + max_dist + 1).min(s2_len);
             for j in start..end {
                 if !s2_flags[j] && *c1 == s2_chars[j] {
