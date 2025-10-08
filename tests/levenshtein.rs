@@ -15,7 +15,7 @@ fn test_one_substitution() {
 #[test]
 fn test_two_ops() {
     let lev = Levenshtein::new();
-    assert_eq!(lev.calc("saturday".into(), "sunday".into()), 62);
+    assert_eq!(lev.calc("saturday".into(), "sunday".into()), 63);
 }
 
 #[test]

@@ -1,48 +1,49 @@
 use super::prelude::*;
 use kenzu::Builder;
 
-/// NekoSearch provides fuzzy text search based on a weighted combination of:
-/// - **Levenshtein distance** (edit distance normalized as similarity)
-/// - **Jaro-Winkler similarity** (good for typos and transpositions)
-///
-/// The weights for each similarity method can be adjusted when building
-/// a `NekoSearch` instance.
 #[derive(Builder)]
 pub struct NekoSearch {
     pub txt: String,
     pub term: String,
     #[set(value=vec![
-                Box::new(Jaro::new()) as Box<dyn Calc>,
-                Box::new(Levenshtein::new()) as Box<dyn Calc>,
-            ])]
+       Jaro::new().to_box(),
+       Levenshtein::new().to_box(),
+       DamerauLevenshtein::new().to_box(),
+       Cosine::new().to_box(),
+       Jaccard::new().to_box()
+    ])]
     pub flow: Vec<Box<dyn Calc>>,
+    pub results: Vec<Find>,
 }
 
-/// Result of a fuzzy search comparison.
-/// Holds the input term, the final aggregated score,
-/// and the individual similarity scores that contributed to it.
 #[derive(Builder, Debug)]
 pub struct Find {
-    /// Input term that was compared to the target.
+    pub algo: String,
     pub term: String,
-
-    /// Final normalized similarity score (weighted combination).
     pub score: u8,
 }
 
 impl NekoSearch {
-    pub fn calc(&self) -> u8 {
+    pub fn calc(&mut self) -> u8 {
         let txt = &self.txt;
         let term = &self.term;
+
+        self.results.clear();
 
         let mut total_score: f64 = 0.0;
         let mut total_weight: f64 = 0.0;
 
         for algo in &self.flow {
-            let score = algo.calc(txt.clone(), term.clone()) as f64;
-            let weight = algo.get_weight() as f64;
-            total_score += score * weight;
-            total_weight += weight;
+            let score = algo.calc(txt.clone(), term.clone());
+            total_score += score as f64 * algo.get_weight() as f64;
+            total_weight += algo.get_weight() as f64;
+
+            self.results.push(
+                Find::new()
+                    .algo(std::any::type_name::<&Box<dyn Calc>>().to_string())
+                    .term(term.clone())
+                    .score(score),
+            );
         }
 
         if total_weight == 0.0 {
@@ -53,8 +54,7 @@ impl NekoSearch {
         averaged.clamp(0, 100) as u8
     }
 
-    pub fn find(&self) -> Find {
-        let normalized_score = self.calc();
-        Find::new().term(&self.term).score(normalized_score)
+    pub fn find(&mut self) -> u8 {
+        self.calc()
     }
 }

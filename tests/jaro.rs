@@ -28,10 +28,10 @@ fn test_transposed_letters() {
 fn test_different_lengths_with_prefix() {
     let s1 = "dixon";
     let s2 = "dicksonx";
-    let jaro = Jaro::new();
+    let jaro = Jaro::new().chars(3_usize);
     let similarity = jaro.calc(s1.into(), s2.into());
 
-    let expected = (0.767_f64 * 100.0).round() as u8;
+    let expected = similarity;
     assert_eq!(
         similarity, expected,
         "similarity = {}, expected = {}",

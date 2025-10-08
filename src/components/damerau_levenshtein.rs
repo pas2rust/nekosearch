@@ -1,20 +1,17 @@
+use crate::Calc;
+use kenzu::Builder;
 use std::cmp::min;
 
-use kenzu::Builder;
-
-use crate::Calc;
-
 #[derive(Debug, Builder, Clone)]
-pub struct Levenshtein {
+pub struct DamerauLevenshtein {
     #[set(value = 100)]
     pub weight: u8,
 }
 
-impl Calc for Levenshtein {
+impl Calc for DamerauLevenshtein {
     fn calc(&self, s1: String, s2: String) -> u8 {
         let s1_chars: Vec<char> = s1.chars().collect();
         let s2_chars: Vec<char> = s2.chars().collect();
-
         let len1 = s1_chars.len();
         let len2 = s2_chars.len();
 
@@ -39,15 +36,25 @@ impl Calc for Levenshtein {
                 } else {
                     1
                 };
-                matrix[i][j] = min(
+                let mut val = min(
                     min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1),
                     matrix[i - 1][j - 1] + cost,
                 );
+
+                if i > 1
+                    && j > 1
+                    && s1_chars[i - 1] == s2_chars[j - 2]
+                    && s1_chars[i - 2] == s2_chars[j - 1]
+                {
+                    val = min(val, matrix[i - 2][j - 2] + cost);
+                }
+
+                matrix[i][j] = val;
             }
         }
 
         let distance = matrix[len1][len2] as f64;
-        let max_len = (len1.max(len2)) as f64;
+        let max_len = len1.max(len2) as f64;
         let similarity = if max_len == 0.0 {
             1.0
         } else {

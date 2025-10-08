@@ -6,6 +6,8 @@ use crate::Calc;
 pub struct Jaro {
     #[set(value = 100)]
     pub weight: u8,
+    #[set(value = 4_usize)]
+    pub chars: usize,
 }
 
 impl Calc for Jaro {
@@ -16,7 +18,7 @@ impl Calc for Jaro {
         let s2_len = s2_chars.len();
 
         if s1_len == 0 || s2_len == 0 {
-            return 100;
+            return 0;
         }
 
         let max_dist = ((s1_len.max(s2_len)) / 2).saturating_sub(1);
@@ -63,15 +65,13 @@ impl Calc for Jaro {
         let prefix_len = s1_chars
             .iter()
             .zip(s2_chars.iter())
-            .take(4)
+            .take(self.chars)
             .take_while(|(c1, c2)| c1 == c2)
             .count();
-        let jaro_winkler = jaro + (prefix_len as f64) * 0.1 * (1.0 - jaro);
+        let jaro_winkler = jaro + (prefix_len as f64) * 0.076 * (1.0 - jaro);
 
         let percent = (jaro_winkler * 100.0).round();
-
         let weighted = (percent * (self.weight as f64) / 100.0).round() as i32;
-
         let clamped = weighted.clamp(0, 100);
 
         clamped as u8
