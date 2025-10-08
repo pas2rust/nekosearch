@@ -10,7 +10,9 @@ pub struct NekoSearch {
        Levenshtein::new().to_box(),
        DamerauLevenshtein::new().to_box(),
        Cosine::new().to_box(),
-       Jaccard::new().to_box()
+       Jaccard::new().to_box(),
+       Metaphone::new().to_box(),
+       Lcs::new().to_box()
     ])]
     pub flow: Vec<Box<dyn Calc>>,
     pub results: Vec<Find>,
@@ -20,41 +22,58 @@ pub struct NekoSearch {
 pub struct Find {
     pub algo: String,
     pub term: String,
-    pub score: u8,
+    pub score: f32,
+}
+
+fn normalize(s: &str) -> String {
+    s.to_lowercase()
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c.is_whitespace() {
+                c
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join(" ")
 }
 
 impl NekoSearch {
-    pub fn calc(&mut self) -> u8 {
-        let txt = &self.txt;
-        let term = &self.term;
+    pub fn calc(&mut self) -> f32 {
+        let txt = normalize(&self.txt);
+        let term = normalize(&self.term);
 
         self.results.clear();
 
-        let mut total_score: f64 = 0.0;
-        let mut total_weight: f64 = 0.0;
+        let mut total_score = 0.0f32;
+        let mut total_weight = 0.0f32;
 
         for algo in &self.flow {
-            let score = algo.calc(txt.clone(), term.clone());
-            total_score += score as f64 * algo.get_weight() as f64;
-            total_weight += algo.get_weight() as f64;
+            let score = algo.calc(txt.clone(), term.clone()).clamp(0.0, 1.0);
+            let weight = algo.get_weight().clamp(0.0, 1.0);
+
+            total_score += score * weight;
+            total_weight += weight;
 
             self.results.push(
                 Find::new()
-                    .algo(std::any::type_name::<&Box<dyn Calc>>().to_string())
+                    .algo(algo.get_algo_name())
                     .term(term.clone())
                     .score(score),
             );
         }
 
         if total_weight == 0.0 {
-            return 0;
+            return 0.0;
         }
 
-        let averaged = (total_score / total_weight).round() as i32;
-        averaged.clamp(0, 100) as u8
+        (total_score / total_weight).clamp(0.0, 1.0)
     }
 
-    pub fn find(&mut self) -> u8 {
+    pub fn find(&mut self) -> f32 {
         self.calc()
     }
 }

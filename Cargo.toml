@@ -1,6 +1,6 @@
 [package]
 name = "nekosearch"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/pas2rust/nekosearch"
@@ -21,3 +21,4 @@ categories = ["development-tools", "algorithms"]
 
 [dependencies]
 kenzu = "0.0.9"
+rphonetic = "3.0.4"

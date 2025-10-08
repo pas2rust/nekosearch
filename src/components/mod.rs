@@ -1,8 +1,10 @@
 pub mod cosine;
 pub mod damerau_levenshtein;
 pub mod dto;
+pub mod fonetic;
 pub mod jaccard;
 pub mod jaro;
+pub mod lcs;
 pub mod levenshtein;
 pub mod prelude;
 pub mod search;

@@ -4,21 +4,24 @@ use crate::Calc;
 
 #[derive(Debug, Builder, Clone)]
 pub struct Jaro {
-    #[set(value = 100)]
-    pub weight: u8,
+    #[set(value = 1.0)]
+    pub weight: f32,
     #[set(value = 4_usize)]
     pub chars: usize,
 }
 
 impl Calc for Jaro {
-    fn calc(&self, s1: String, s2: String) -> u8 {
+    fn calc(&self, s1: String, s2: String) -> f32 {
         let s1_chars: Vec<char> = s1.chars().collect();
         let s2_chars: Vec<char> = s2.chars().collect();
         let s1_len = s1_chars.len();
         let s2_len = s2_chars.len();
 
+        if s1_len == 0 && s2_len == 0 {
+            return 1.0;
+        }
         if s1_len == 0 || s2_len == 0 {
-            return 0;
+            return 0.0;
         }
 
         let max_dist = ((s1_len.max(s2_len)) / 2).saturating_sub(1);
@@ -40,7 +43,7 @@ impl Calc for Jaro {
 
         let matches = s1_matches.len();
         if matches == 0 {
-            return 0;
+            return 0.0;
         }
 
         let mut s2_matches: Vec<char> = Vec::with_capacity(matches);
@@ -70,14 +73,12 @@ impl Calc for Jaro {
             .count();
         let jaro_winkler = jaro + (prefix_len as f64) * 0.076 * (1.0 - jaro);
 
-        let percent = (jaro_winkler * 100.0).round();
-        let weighted = (percent * (self.weight as f64) / 100.0).round() as i32;
-        let clamped = weighted.clamp(0, 100);
-
-        clamped as u8
+        let mut result = jaro_winkler as f32;
+        result *= self.weight;
+        result.clamp(0.0, 1.0)
     }
 
-    fn get_weight(&self) -> u8 {
+    fn get_weight(&self) -> f32 {
         self.weight
     }
 }
